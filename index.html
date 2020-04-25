@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <title>Chess Game</title>
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+            <link rel="stylesheet" href="./chessboardjs-1.0.0(1)/css/chessboard-1.0.0.min.css">
+            <link rel="stylesheet" href="./style.css">
+            <script src="./chessboardjs-1.0.0(1)/js/chessboard-1.0.0.min.js"></script>
+            <script src="node_modules/chess.js/chess.js"></script>
+            <script src="./ai.js"></script>
+        </head>
+        <body>
+            <div style="display:flex;flex-direction: column; justify-content: space-around;align-items: center; height:60vh;width: 30%;">
+              <h2>Welcome Opponent!</h2>
+              <h3 style="border: rgba(255,255,255,.5) solid 1px;background-color: #2C5364;padding: 1rem 1rem;border-radius: 10rem; cursor: pointer;" onclick="changeDifficulty(0)">Easy Mode</h3>
+              <h3 style="border: rgba(255,255,255,.5) solid 1px;background-color: #2C5364;padding: 1rem 1rem;border-radius: 10rem; cursor: pointer;" onclick="changeDifficulty(1)">Medium Mode</h3>
+              <h3 style="border: rgba(255,255,255,.5) solid 1px;background-color: #2C5364;padding: 1rem 1rem;border-radius: 10rem; cursor: pointer;" onclick="changeDifficulty(2)">Hard Mode</h3>
+            </div>
+            <div  id="myBoard"></div>
+            <div style="display:flex;flex-direction: column; justify-content: space-around;align-items: center; height:60vh;width: 30%;">
+              <h2>This is <small><sub>(not)</sub></small> the ultimate chess AI!</h2>
+              <div style='width: 100%;align-items: center; justify-content: center;display: flex; flex-direction: column;'>
+                <h3>Difficulty</h3>
+                <span id="dif">Medium</span>
+              </div>
+              <div  id="statusDiv" style='width: 100%;align-items: center; justify-content: center;display: flex; flex-direction: column;'>
+                <h3>Status Update</h3>
+                <span id="statusUpdate">Medium</span>
+              </div>
+              <h3 onclick="restart()" style="border: rgba(255,255,255,.5) solid 1px;background-color: #2C5364;padding: 1rem 1rem;border-radius: 10rem; cursor: pointer;" onclick="getElementById('dif').innerHTML = 'Easy'">
+                Start New Game
+              </h3>
+            </div>
+          </body>
+        <script type="text/javascript">
+            // NOTE: this example uses the chess.js library:
+// https://github.com/jhlywa/chess.js
+
+var board = null
+var game = new Chess()
+var $status = $('#status')
+var $fen = $('#fen')
+var $pgn = $('#pgn')
+function onDragStart (source, piece, position, orientation) {
+  // do not pick up pieces if the game is over
+  if (game.game_over()) return false
+
+  // only pick up pieces for the side to move
+  if (piece.search(/^b/) !== -1) return false
+  
+}
+
+function restart(){
+  game.reset();
+  board.start();
+}
+
+function Aimove(){
+      game.turn('b');      
+      updateStatus();
+	    game.move(bestMove());
+      board.position(game.fen());
+      game.turn('w');
+      updateStatus();
+}
+
+
+
+function onDrop (source, target) {
+  // see if the move is legal
+  var move = game.move({
+    from: source,
+    to: target,
+    promotion: 'q' // NOTE: always promote to a queen for example simplicity
+  })
+
+  // illegal move
+  if (move === null) return 'snapback'
+
+  window.setTimeout(Aimove, 250);
+}
+
+function changeDifficulty(tmp){
+  if(tmp === 0){
+    document.getElementById("dif").innerHTML = "Easy";
+  }else if(tmp === 1){
+    document.getElementById("dif").innerHTML = "Medium";
+  }else if(tmp === 2){
+    document.getElementById("dif").innerHTML = "Hard";
+  }
+  minimaxDepth = tmp;
+  game.reset();
+  board.start();
+}
+
+// update the board position after the piece snap
+// for castling, en passant, pawn promotion
+function onSnapEnd () {
+  board.position(game.fen())
+}
+
+function updateStatus () {
+  var status = '';
+  var statusDiv = document.getElementById('statusDiv');
+  var moveColor = 'White'
+  if (game.turn() === 'b') {
+    moveColor = 'Black'
+  }
+
+  // checkmate?
+  if (game.in_checkmate()) {
+    status = 'Game over, ' + moveColor + ' is in checkmate.'
+  }
+
+  // draw?
+  else if (game.in_draw()) {
+    status = 'Game over, drawn position'
+  }
+
+  // game still on
+  else {
+    status = moveColor + ' to move'
+
+    // check?
+    if (game.in_check()) {
+      status += ', ' + moveColor + ' is in check'
+    }
+  }
+
+  $status.html(status);
+  $fen.html(game.fen());
+  $pgn.html(game.pgn());
+  document.getElementById('statusUpdate').innerHTML = status;
+}
+
+var config = {
+  draggable: true,
+  position: 'start',
+  onDragStart: onDragStart,
+  onDrop: onDrop,
+  onSnapEnd: onSnapEnd,
+}
+board = Chessboard('myBoard', config);
+
+updateStatus()
+            </script>
+    </html>
+</html>
